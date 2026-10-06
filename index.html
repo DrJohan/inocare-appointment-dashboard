@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Klinik Inocare staff calendar and appointment dashboard.">
+  <meta name="referrer" content="no-referrer">
+  <title>Appointments | Klinik Inocare</title>
+  <link rel="icon" href="./assets/inocare-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#appointments">Skip to appointment list</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <div class="brand"><img src="./assets/inocare-logo.png" alt="Klinik Inocare" width="200" height="80"><span class="staff-label">STAFF DASHBOARD</span></div>
+      <div class="header-actions"><span class="timezone">Malaysia time · GMT+8</span><button id="settings-button" class="button subtle" type="button">Setup</button><button id="disconnect-button" class="button subtle" type="button" hidden>Disconnect</button></div>
+    </div>
+  </header>
+  <main class="shell">
+    <div class="page-heading"><div><p class="eyebrow">CLINIC SCHEDULE</p><h1>Appointments</h1><p id="account-label" class="account-label">inocareklinik@gmail.com</p></div><div class="sync-controls"><p id="sync-status" role="status" aria-live="polite">Google Calendar is not connected</p><button id="refresh-button" type="button" class="button" disabled>Refresh</button></div></div>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <section id="connect-panel" class="connect-panel" aria-labelledby="connect-title">
+      <div class="connect-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18m-13 5 2 2 5-5"/></svg></div>
+      <div><h2 id="connect-title">Your clinic schedule, in one place</h2><p>Connect the clinic Google account to view its calendars and appointments. Changes refresh automatically every minute while this page is open.</p></div>
+      <button id="connect-button" class="button primary" type="button">Connect Google Calendar</button>
+    </section>
+    <section class="summary" aria-label="Schedule overview">
+      <div class="summary-card"><span>Today</span><strong id="today-count">—</strong><small id="today-label"></small></div>
+      <div class="summary-card"><span>Selected date</span><strong id="selected-count">—</strong><small id="selected-label"></small></div>
+      <div class="summary-card"><span>This month</span><strong id="month-count">—</strong><small id="month-label"></small></div>
+    </section>
+    <section class="calendar-panel panel" aria-labelledby="month-title">
+      <div class="panel-heading calendar-toolbar"><div class="month-nav"><button id="previous-month" class="button icon-button" type="button" aria-label="Previous month">‹</button><h2 id="month-title"></h2><button id="next-month" class="button icon-button" type="button" aria-label="Next month">›</button></div><div class="calendar-tools"><button id="today-button" class="button" type="button">Today</button><span class="calendar-hint">Select a date to see appointments</span></div></div>
+      <div class="weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+      <div id="calendar-grid" class="calendar-grid" role="group" aria-label="Choose an appointment date"></div>
+      <div class="calendar-footer"><span><span class="today-ring" aria-hidden="true"></span>Today</span><span id="calendar-range-status">Connect to load appointments</span></div>
+    </section>
+    <section id="calendar-filters" class="filter-section" aria-labelledby="filter-title" hidden><h2 id="filter-title">Calendars</h2><div id="filter-list" class="filter-list"></div></section>
+    <section id="appointments" class="appointments-panel panel" aria-labelledby="appointments-title" tabindex="-1">
+      <div class="panel-heading list-toolbar"><div><p class="eyebrow">APPOINTMENT LIST</p><h2 id="appointments-title"></h2></div><div class="segmented" role="group" aria-label="Appointment list range"><button id="day-view" type="button" aria-pressed="true">Selected date</button><button id="month-view" type="button" aria-pressed="false">Whole month</button></div></div>
+      <div id="appointment-list"></div>
+    </section>
+    <footer class="page-footer"><span>Google Calendar is the source of truth.</span><span>Appointments are shown only after Google authorisation.</span></footer>
+  </main>
+  <dialog id="settings-dialog" aria-labelledby="setup-title">
+    <form id="settings-form"><div class="dialog-heading"><h2 id="setup-title">Connect your dashboard</h2><button type="button" id="close-settings" class="button icon-button" aria-label="Close setup">×</button></div>
+      <p>A Google web client ID connects this GitHub Pages website to your clinic calendar. You only need to set this up once.</p>
+      <label for="client-id">Google OAuth web client ID</label><input id="client-id" name="clientId" autocomplete="off" spellcheck="false" placeholder="…apps.googleusercontent.com">
+      <p class="field-help">Use a client ID, never a client secret. This ID is saved on this browser; the owner can also set it in the website configuration.</p>
+      <details><summary>One-time Google setup</summary><ol><li>Open <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener noreferrer">Google Cloud</a> using the clinic account. Create a project and enable the Google Calendar API.</li><li>In Google Auth Platform, set up Branding and Audience. For testing, add <strong>inocareklinik@gmail.com</strong> as a test user.</li><li>Create an OAuth client with application type <strong>Web application</strong>. Add this authorised JavaScript origin: <code id="current-origin"></code>. Use the origin only, without the repository path.</li><li>Copy the client ID into the field above, save, then choose Connect Google Calendar and grant read access.</li></ol><p>When Google’s authorisation expires, use Connect again. Automatic updates run while the dashboard is open and connected.</p></details>
+      <p id="settings-error" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button type="submit" class="button primary">Save client ID</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
