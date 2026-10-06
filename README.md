@@ -2,6 +2,8 @@
 
 A static, GitHub Pages-compatible staff calendar for **inocareklinik@gmail.com**. A monthly calendar sits above an appointment list, with selected-date and whole-month views. Every owned calendar is discovered automatically; subscribed public holidays are excluded. Calendar filters let staff choose which schedules to show.
 
+Each calendar has a distinct category colour, used consistently in filters, calendar entries, date markers and appointment badges. Colours remain stable during refreshes and when new calendars are added. Calendar names remain visible alongside the colours. The header uses the supplied full-colour Klinik Inocare logo.
+
 ## Automatic updates
 
 The open, connected dashboard refreshes every 60 seconds and when you return to the tab. Each refresh replaces the displayed month with a complete Google Calendar result, including all pages and recurring instances. Newly created, changed, moved and deleted events are reflected after the next successful refresh. New owned calendars are discovered too.

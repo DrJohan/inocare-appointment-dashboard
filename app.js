@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 import { dateKey, addDays, monthRange, monthCells, shiftMonth, groupEvents, formatDay, eventTime } from './calendar.js';
 import { SCOPES, readAccount, readSnapshot } from './google-calendar.js';
+import { assignCalendarColours } from './calendar-colours.js';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'inocare-google-web-client-id';
@@ -36,6 +37,15 @@ function viewGroups() {
 }
 
 function hasData() { return state.events !== null && state.loadedMonth === state.month; }
+
+function colourCalendar(node, calendarId) {
+  const calendar = state.calendars.find(item => item.id === calendarId);
+  if (calendar) {
+    node.style.setProperty('--calendar-colour', calendar.colour);
+    node.style.setProperty('--calendar-tint', calendar.tint);
+  }
+  return node;
+}
 
 function render() {
   const groups = viewGroups();
@@ -79,7 +89,12 @@ function renderCalendar(groups, ready) {
       'aria-label': `${formatDay(day, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${ready && !outside ? `, ${events.length} appointments` : ''}`,
     }, element('span', { class: 'day-number', text: Number(day.slice(-2)) }));
     if (day === dateKey()) button.setAttribute('aria-current', 'date');
-    for (const event of events.slice(0, 2)) button.append(element('span', { class: 'day-event', text: event.summary || 'Untitled appointment', 'aria-hidden': 'true' }));
+    for (const event of events.slice(0, 2)) button.append(colourCalendar(element('span', { class: 'day-event', text: event.summary || 'Untitled appointment', 'aria-hidden': 'true' }), event.calendarId));
+    if (events.length) {
+      const swatches = element('span', { class: 'day-calendar-swatches', 'aria-hidden': 'true' });
+      for (const id of new Set(events.map(event => event.calendarId))) swatches.append(colourCalendar(element('span', { class: 'calendar-swatch' }), id));
+      button.append(swatches);
+    }
     if (events.length) button.append(element('span', { class: 'day-count', text: `${events.length} appt${events.length === 1 ? '' : 's'}`, 'aria-hidden': 'true' }));
     button.addEventListener('click', () => selectDate(day));
     button.addEventListener('keydown', event => {
@@ -117,12 +132,12 @@ function renderAppointments(groups, ready) {
       element('h3', { text: formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' }) }),
       element('span', { text: `${events.length} appointment${events.length === 1 ? '' : 's'}` })));
     for (const event of events) {
-      const meta = element('div', { class: 'appointment-meta' }, element('span', { class: 'calendar-badge', text: event.calendarName }));
+      const meta = element('div', { class: 'appointment-meta' }, colourCalendar(element('span', { class: 'calendar-badge', text: event.calendarName }), event.calendarId));
       if (event.location) meta.append(element('span', { text: event.location }));
       if (event.status === 'tentative') meta.append(element('span', { text: 'Tentative' }));
-      const row = element('article', { class: 'appointment-row' },
+      const row = colourCalendar(element('article', { class: 'appointment-row' },
         element('div', { class: 'appointment-time', text: eventTime(event, day) }),
-        element('div', { class: 'appointment-content' }, element('h3', { text: event.summary || 'Untitled appointment' }), meta));
+        element('div', { class: 'appointment-content' }, element('h3', { text: event.summary || 'Untitled appointment' }), meta)), event.calendarId);
       // Provider links are accepted only on Google Calendar's HTTPS origin.
       try {
         const url = new URL(event.htmlLink);
@@ -147,8 +162,9 @@ function renderFilters() {
       else state.selectedCalendars.delete(calendar.id);
       render();
     });
-    fragment.append(element('label', { class: 'filter-chip' }, checkbox,
-      element('span', { text: calendar.primary ? 'Main clinic' : calendar.name })));
+    fragment.append(colourCalendar(element('label', { class: 'filter-chip' }, checkbox,
+      element('span', { class: 'calendar-swatch', 'aria-hidden': 'true' }),
+      element('span', { text: calendar.primary ? 'Main clinic' : calendar.name })), calendar.id));
   }
   $('filter-list').replaceChildren(fragment);
 }
@@ -185,6 +201,7 @@ async function refresh(manual = false) {
   try {
     const snapshot = await readSnapshot(token, monthRange(requestedMonth));
     if (sequence !== state.sequence || token !== state.token) return;
+    snapshot.calendars = assignCalendarColours(snapshot.calendars, state.calendars);
     const oldIds = new Set(state.calendars.map(calendar => calendar.id));
     for (const calendar of snapshot.calendars) if (!oldIds.has(calendar.id)) state.selectedCalendars.add(calendar.id);
     const currentIds = new Set(snapshot.calendars.map(calendar => calendar.id));
@@ -281,7 +298,7 @@ function loadDemo() {
   const range = monthRange(state.month);
   const day = state.selectedDate;
   state.demo = true;
-  state.calendars = [{ id: 'sample-main', name: 'Main clinic', primary: true }, { id: 'sample-specialist', name: 'Sample specialist', primary: false }];
+  state.calendars = assignCalendarColours([{ id: 'sample-main', name: 'Main clinic', primary: true }, { id: 'sample-specialist', name: 'Sample specialist', primary: false }], state.calendars);
   state.selectedCalendars = new Set(state.calendars.map(calendar => calendar.id));
   state.events = [
     { id: 'sample-1', summary: 'Sample consultation', start: { dateTime: `${day}T09:00:00+08:00` }, end: { dateTime: `${day}T09:30:00+08:00` }, calendarId: 'sample-main', calendarName: 'Main clinic', location: 'Sample consultation room' },
